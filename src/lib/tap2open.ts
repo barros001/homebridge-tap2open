@@ -81,7 +81,7 @@ export default class Tap2Open {
   public async openGate(gate: Gate): Promise<boolean> {
     await this.login();
 
-    const response = await fetch('https://2d3ab68f-dbef-4629-a29f-2b4b63b3190a.mock.pstmn.io/portal/open-gate', {
+    const response = await fetch('https://tap2open.com/portal/open-gate', {
       method: 'POST',
       headers: {
         'X-T2O-Login-Token': this.token!.login_token,
