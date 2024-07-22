@@ -1,5 +1,4 @@
 {
-  "private": true,
   "displayName": "Homebridge Tap2Open",
   "name": "homebridge-tap2open",
   "version": "1.0.1-beta.0",
