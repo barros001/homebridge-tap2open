@@ -1,5 +1,5 @@
 {
-  "pluginAlias": "ExampleHomebridgePlugin",
+  "pluginAlias": "HomebridgeTap2Open",
   "pluginType": "platform",
   "singular": true,
   "schema": {
@@ -9,7 +9,19 @@
         "title": "Name",
         "type": "string",
         "required": true,
-        "default": "Example Dynamic Platform"
+        "default": "Tap2Open"
+      },
+      "username": {
+        "title": "Tap2Open Username",
+        "required": true,
+        "type": "string",
+        "description": "The username you use to login to the Tap2Open app."
+      },
+      "password": {
+        "title": "Tap2Open Password",
+        "required": true,
+        "type": "string",
+        "description": "The password you use to login to the Tap2Open app."
       }
     }
   }

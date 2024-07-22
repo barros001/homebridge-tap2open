@@ -1,17 +1,17 @@
 {
   "private": true,
-  "displayName": "Plugin Name",
-  "name": "homebridge-plugin-name",
+  "displayName": "Homebridge Tap2Open",
+  "name": "homebridge-tap2open",
   "version": "1.0.0",
-  "description": "A short description about what your plugin does.",
+  "description": "Homebridge Plugin for Tap2Open",
   "license": "Apache-2.0",
   "type": "module",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/USERNAME/GITHUB_PROJECT_NAME.git"
+    "url": "git+https://github.com/barros001/homebridge-tap2open"
   },
   "bugs": {
-    "url": "https://github.com/USERNAME/GITHUB_PROJECT_NAME/issues"
+    "url": "https://github.com/barros001/homebridge-tap2open/issues"
   },
   "engines": {
     "node": "^18.17.0 || ^20.9.0",
@@ -25,7 +25,8 @@
     "prepublishOnly": "npm run lint && npm run build"
   },
   "keywords": [
-    "homebridge-plugin"
+    "homebridge-plugin",
+    "tap2open"
   ],
   "devDependencies": {
     "@types/node": "^20.14.10",
