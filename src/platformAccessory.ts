@@ -45,6 +45,8 @@ export class GateAccessory {
       .onGet(() => {
         return false;
       });
+
+    this.closed();
   }
 
   async setTargetDoorState(value: CharacteristicValue): Promise<void> {
