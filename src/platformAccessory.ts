@@ -39,6 +39,12 @@ export class GateAccessory {
 
     this.service.getCharacteristic(this.platform.Characteristic.CurrentDoorState)
       .onGet(() => {
+        this.platform.log.debug('Current gate status:', {
+          gate: this.accessory.context.gate.parameters.description,
+          state: this.state.currentDoorState,
+          online: this.online,
+        });
+
         if (this.online) {
           return this.state.currentDoorState;
         }
@@ -55,33 +61,23 @@ export class GateAccessory {
   }
 
   async setTargetDoorState(value: CharacteristicValue): Promise<void> {
-    if (!this.online) {
-      this.platform.log.debug(`Gate ${this.accessory.context.gate.parameters.description} is offline, ignoring request.`);
-      this.closed();
-
-      return;
-    }
-
-    if (this.state.targetDoorState !== this.platform.Characteristic.TargetDoorState.CLOSED) {
-      this.platform.log.debug(`Gate ${this.accessory.context.gate.parameters.description} is already opening, ignoring request.`);
-
-      setTimeout(() => {
-        this.service.updateCharacteristic(this.platform.Characteristic.TargetDoorState, this.platform.Characteristic.TargetDoorState.OPEN);
-      }, 0);
-
-      return;
-    }
-
     if (value === this.platform.Characteristic.TargetDoorState.OPEN) {
-      this.platform.log.info(`Opening gate ${this.accessory.context.gate.parameters.description}...`);
+      if (this.state.targetDoorState === value) {
+        this.platform.log.debug(`Gate ${this.accessory.context.gate.parameters.description} is already opening, ignoring request.`);
+        return;
+      }
 
+      this.platform.log.info(`Opening gate ${this.accessory.context.gate.parameters.description}...`);
       this.opening();
 
       try {
         await this.platform.tap2OpenClient?.openGate(this.accessory.context.gate);
 
+        // bring it back online if it was offline
+        this.online = true;
+
         setTimeout(() => {
-          this.platform.log.debug(`Gate ${this.accessory.context.gate.parameters.description} opened.`);
+          this.platform.log.info(`Gate ${this.accessory.context.gate.parameters.description} opened.`);
           this.open();
 
           setTimeout(() => {
@@ -90,7 +86,12 @@ export class GateAccessory {
         }, 5000);
       } catch (error) {
         this.platform.log.error(`Failed to open gate ${this.accessory.context.gate.parameters.description}: ${error}`);
-        this.closed();
+
+        // mark it as offline
+        this.online = false;
+
+        this.closed(false);
+        throw new this.platform.api.hap.HapStatusError(this.platform.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE);
       }
     }
   }
@@ -109,10 +110,19 @@ export class GateAccessory {
     this.service.updateCharacteristic(this.platform.Characteristic.CurrentDoorState, this.platform.Characteristic.CurrentDoorState.OPEN);
   }
 
-  closed(): void {
+  closed(updateCharacteristic: boolean = true): void {
     this.state.targetDoorState = this.platform.Characteristic.TargetDoorState.CLOSED;
     this.state.currentDoorState = this.platform.Characteristic.CurrentDoorState.CLOSED;
-    this.service.updateCharacteristic(this.platform.Characteristic.CurrentDoorState, this.platform.Characteristic.CurrentDoorState.CLOSED);
-    this.service.updateCharacteristic(this.platform.Characteristic.TargetDoorState, this.platform.Characteristic.TargetDoorState.CLOSED);
+
+    if (updateCharacteristic) {
+      this.service.updateCharacteristic(
+        this.platform.Characteristic.CurrentDoorState,
+        this.platform.Characteristic.CurrentDoorState.CLOSED,
+      );
+      this.service.updateCharacteristic(
+        this.platform.Characteristic.TargetDoorState,
+        this.platform.Characteristic.TargetDoorState.CLOSED,
+      );
+    }
   }
 }

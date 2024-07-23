@@ -23,9 +23,20 @@ type Gate = {
   };
 };
 
+export enum Event {
+  ERROR = 'error'
+}
+
+type EventListener = (error?: string) => void;
+
+type EventListeners = {
+  [Event.ERROR]?: Array<EventListener>;
+};
+
 export default class Tap2Open {
   private readonly config: Config;
   private token: Token | null = null;
+  private listeners: EventListeners = {};
 
   constructor(config: Config) {
     this.config = config;
@@ -49,13 +60,19 @@ export default class Tap2Open {
     });
 
     if (!response.ok) {
-      throw new Error('Login failed');
+      this.error('Login failed');
     }
 
     this.token = {
       ...await response.json(),
       cookie: this.extractSessionCookie(response),
     };
+
+    return this;
+  }
+
+  public logout(): this {
+    this.token = null;
 
     return this;
   }
@@ -72,7 +89,7 @@ export default class Tap2Open {
     });
 
     if (!response.ok) {
-      throw new Error('Failed to list gates');
+      this.error('Failed to list gates');
     }
 
     return (await response.json()).gates;
@@ -93,7 +110,7 @@ export default class Tap2Open {
     });
 
     if (!response.ok) {
-      throw new Error('Failed to open gate');
+      this.error('Failed to open gate');
     }
 
     return true;
@@ -119,5 +136,35 @@ export default class Tap2Open {
     }
 
     return match[1];
+  }
+
+  public on(event: Event, listener: EventListener): this {
+    (this.listeners[event] ||= []).push(listener);
+
+    return this;
+  }
+
+  public off(): this {
+    this.listeners = {};
+
+    return this;
+  }
+
+  private dispatch(event: Event, error?: string): this {
+    if (!this.listeners[event]) {
+      return this;
+    }
+
+    for (const listener of this.listeners[event]) {
+      listener(error);
+    }
+
+    return this;
+  }
+
+  private error(error: string): void {
+    this.dispatch(Event.ERROR, error);
+
+    throw new Error(error);
   }
 }

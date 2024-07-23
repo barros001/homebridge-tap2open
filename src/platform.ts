@@ -1,16 +1,17 @@
-import {API, DynamicPlatformPlugin, Logging, PlatformAccessory, PlatformConfig, Service, Characteristic} from 'homebridge';
-import Tap2Open from './lib/tap2open.js';
+import {API, Characteristic, DynamicPlatformPlugin, Logging, PlatformAccessory, PlatformConfig, Service} from 'homebridge';
+import Tap2Open, {Event} from './lib/tap2open.js';
 
 import {PLATFORM_NAME, PLUGIN_NAME} from './settings.js';
 import {GateAccessory} from './platformAccessory.js';
 
 export class HomebridgePlatform implements DynamicPlatformPlugin {
   public readonly Service: typeof Service;
+
   public readonly Characteristic: typeof Characteristic;
 
   public readonly accessories: GateAccessory[] = [];
 
-  public tap2OpenClient: Tap2Open | null = null;
+  public tap2OpenClient: Tap2Open;
 
   constructor(
     public readonly log: Logging,
@@ -19,52 +20,74 @@ export class HomebridgePlatform implements DynamicPlatformPlugin {
   ) {
     this.Service = api.hap.Service;
     this.Characteristic = api.hap.Characteristic;
+    this.tap2OpenClient = new Tap2Open({
+      username: config.username,
+      password: config.password,
+    });
 
-    this.log.debug('Finished initializing platform:', this.config.name);
+    log.debug('Finished initializing platform:', config.name);
 
     if (!log.success) {
       log.success = log.info;
     }
 
-    this.api.on('didFinishLaunching', () => {
+    this.api.on('didFinishLaunching', async () => {
       log.debug('Executed didFinishLaunching callback');
-      this.discoverGates();
+      await this.initialize();
     });
   }
 
-  configureAccessory(accessory: PlatformAccessory) {
+  public configureAccessory(accessory: PlatformAccessory): void {
     this.log.info('Loading accessory from cache:', accessory.displayName);
 
-    // add the restored accessory to the accessories cache, so we can track if it has already been registered
     this.accessories.push(new GateAccessory(this, accessory));
   }
 
-  async discoverGates() {
+  private async initialize(): Promise<void> {
     if (!this.config.username || !this.config.password) {
-      this.log.error(`Plugin ${this.config.name} not configured.`);
+      this.log.error('Platform not configured:', this.config.name);
       return;
     }
-
-    this.tap2OpenClient = new Tap2Open({
-      username: this.config.username,
-      password: this.config.password,
-    });
-
-    let gates;
 
     try {
-      gates = await this.tap2OpenClient.listGates();
-    } catch (error) {
-      this.log.error('Failed to discover gates:', error);
-      return;
+      await this.discoverGates();
+
+      this.tap2OpenClient.on(Event.ERROR, (error) => {
+        setTimeout(() => {
+          this.log.error('Received error event:', error);
+          this.reconnectIn(10);
+        }, 0);
+      });
+    } catch (e) {
+      this.log.error('Error while initializing platform:', e);
+      this.reconnectIn(10);
     }
+  }
+
+  private reconnectIn(seconds: number): void {
+    this.log.info('Reconnecting in %d seconds...', seconds);
+
+    this.tap2OpenClient
+      .off()
+      .logout();
+
+    this.bringAllGatesOffline();
+
+    setTimeout(async () => {
+      this.log.info('Reconnecting...');
+      await this.initialize();
+    }, seconds * 1000);
+  }
+
+  private async discoverGates(): Promise<void> {
+    const gates = await this.tap2OpenClient.listGates();
 
     for (const gate of gates) {
       const uuid = this.api.hap.uuid.generate(gate.gate_id.toString());
       const existingAccessory = this.accessories.find(gateAccessory => gateAccessory.accessory.UUID === uuid);
 
       if (existingAccessory) {
-        this.log.info('Restoring existing accessory from cache:', existingAccessory.accessory.displayName);
+        this.log.info('Restoring existing gate from cache:', existingAccessory.accessory.displayName);
         existingAccessory.online = true;
       } else {
         this.log.info('Adding new gate:', gate.parameters.description);
@@ -75,6 +98,12 @@ export class HomebridgePlatform implements DynamicPlatformPlugin {
 
         this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
       }
+    }
+  }
+
+  private bringAllGatesOffline(): void {
+    for (const accessory of this.accessories) {
+      accessory.online = false;
     }
   }
 }
