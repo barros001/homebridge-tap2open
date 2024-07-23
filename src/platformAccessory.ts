@@ -8,6 +8,9 @@ type State = {
 };
 
 export class GateAccessory {
+  OPENING_TIME = 5000;
+  OPEN_TIME = 3000;
+
   private service: Service;
 
   private state: State;
@@ -82,8 +85,8 @@ export class GateAccessory {
 
           setTimeout(() => {
             this.closed();
-          }, 3000);
-        }, 5000);
+          }, this.OPEN_TIME);
+        }, this.OPENING_TIME);
       } catch (error) {
         this.platform.log.error(`Failed to open gate ${this.accessory.context.gate.parameters.description}: ${error}`);
 
@@ -93,6 +96,14 @@ export class GateAccessory {
         this.closed(false);
         throw new this.platform.api.hap.HapStatusError(this.platform.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE);
       }
+    } else if (this.state.targetDoorState !== value) {
+      this.platform.log.debug('Closing gate is not supported');
+      setTimeout(() => {
+        this.service.updateCharacteristic(
+          this.platform.Characteristic.TargetDoorState,
+          this.state.targetDoorState,
+        );
+      }, 0);
     }
   }
 
