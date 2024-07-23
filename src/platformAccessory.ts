@@ -8,8 +8,8 @@ type State = {
 };
 
 export class GateAccessory {
-  OPENING_TIME = 5000;
-  OPEN_TIME = 3000;
+  OPENING_TIME = 10000;
+  OPEN_TIME = 5000;
 
   private service: Service;
 
