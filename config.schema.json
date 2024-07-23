@@ -22,6 +22,14 @@
         "required": true,
         "type": "string",
         "description": "The password you use to login to the Tap2Open app."
+      },
+      "reconnectInterval": {
+        "title": "Reconnect Interval",
+        "required": true,
+        "type": "integer",
+        "description": "The interval in seconds to retry the connection to the Tap2Open API after an error. Minimum is 30 seconds.",
+        "default": 30,
+        "minimum": 30
       }
     }
   }

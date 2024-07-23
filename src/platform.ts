@@ -5,6 +5,8 @@ import {PLATFORM_NAME, PLUGIN_NAME} from './settings.js';
 import {GateAccessory} from './platformAccessory.js';
 
 export class HomebridgePlatform implements DynamicPlatformPlugin {
+  MINIMUM_RECONNECT_INTERVAL: number = 30;
+
   public readonly Service: typeof Service;
 
   public readonly Characteristic: typeof Characteristic;
@@ -44,7 +46,7 @@ export class HomebridgePlatform implements DynamicPlatformPlugin {
   }
 
   private async initialize(): Promise<void> {
-    if (!this.config.username || !this.config.password) {
+    if (!this.config.username || !this.config.password || !this.config.reconnectInterval) {
       this.log.error('Platform not configured:', this.config.name);
       return;
     }
@@ -55,12 +57,12 @@ export class HomebridgePlatform implements DynamicPlatformPlugin {
       this.tap2OpenClient.on(Event.ERROR, (error) => {
         setTimeout(() => {
           this.log.error('Received error event:', error);
-          this.reconnectIn(10);
+          this.reconnectIn(Math.max(this.MINIMUM_RECONNECT_INTERVAL, this.config.reconnectInterval));
         }, 0);
       });
     } catch (e) {
       this.log.error('Error while initializing platform:', e);
-      this.reconnectIn(10);
+      this.reconnectIn(Math.max(this.MINIMUM_RECONNECT_INTERVAL, this.config.reconnectInterval));
     }
   }
 
