@@ -8,6 +8,7 @@ type Token = {
   login_token: string;
   supervisor: boolean;
   cookie: string;
+  expires_at: number;
 };
 
 type Gate = {
@@ -34,6 +35,8 @@ type EventListeners = {
 };
 
 export default class Tap2Open {
+  TOKEN_TTL = 60 * 60 * 1000; // 1 hour
+
   private readonly config: Config;
   private token: Token | null = null;
   private listeners: EventListeners = {};
@@ -43,7 +46,7 @@ export default class Tap2Open {
   }
 
   private async login(): Promise<this> {
-    if (this.token) {
+    if (this.token && this.token.expires_at > Date.now()) {
       return this;
     }
 
@@ -66,6 +69,7 @@ export default class Tap2Open {
     this.token = {
       ...await response.json(),
       cookie: this.extractSessionCookie(response),
+      expires_at: Date.now() + this.TOKEN_TTL,
     };
 
     return this;
