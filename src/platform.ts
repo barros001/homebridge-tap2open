@@ -8,7 +8,7 @@ export class HomebridgePlatform implements DynamicPlatformPlugin {
   public readonly Service: typeof Service;
   public readonly Characteristic: typeof Characteristic;
 
-  public readonly accessories: PlatformAccessory[] = [];
+  public readonly accessories: GateAccessory[] = [];
 
   public tap2OpenClient: Tap2Open | null = null;
 
@@ -36,7 +36,7 @@ export class HomebridgePlatform implements DynamicPlatformPlugin {
     this.log.info('Loading accessory from cache:', accessory.displayName);
 
     // add the restored accessory to the accessories cache, so we can track if it has already been registered
-    this.accessories.push(accessory);
+    this.accessories.push(new GateAccessory(this, accessory));
   }
 
   async discoverGates() {
@@ -61,17 +61,17 @@ export class HomebridgePlatform implements DynamicPlatformPlugin {
 
     for (const gate of gates) {
       const uuid = this.api.hap.uuid.generate(gate.gate_id.toString());
-      const existingAccessory = this.accessories.find(accessory => accessory.UUID === uuid);
+      const existingAccessory = this.accessories.find(gateAccessory => gateAccessory.accessory.UUID === uuid);
 
       if (existingAccessory) {
-        this.log.info('Restoring existing accessory from cache:', existingAccessory.displayName);
-        new GateAccessory(this, existingAccessory);
+        this.log.info('Restoring existing accessory from cache:', existingAccessory.accessory.displayName);
+        existingAccessory.online = true;
       } else {
         this.log.info('Adding new gate:', gate.parameters.description);
 
         const accessory = new this.api.platformAccessory(gate.parameters.description, uuid);
         accessory.context.gate = gate;
-        new GateAccessory(this, accessory);
+        this.accessories.push(new GateAccessory(this, accessory, true));
 
         this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
       }

@@ -14,7 +14,8 @@ export class GateAccessory {
 
   constructor(
     private readonly platform: HomebridgePlatform,
-    private readonly accessory: PlatformAccessory,
+    public readonly accessory: PlatformAccessory,
+    public online: boolean = false,
   ) {
 
     this.state = {
@@ -38,7 +39,11 @@ export class GateAccessory {
 
     this.service.getCharacteristic(this.platform.Characteristic.CurrentDoorState)
       .onGet(() => {
-        return this.state.currentDoorState;
+        if (this.online) {
+          return this.state.currentDoorState;
+        }
+
+        throw new this.platform.api.hap.HapStatusError(this.platform.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE);
       });
 
     this.service.getCharacteristic(this.platform.Characteristic.ObstructionDetected)
@@ -50,6 +55,13 @@ export class GateAccessory {
   }
 
   async setTargetDoorState(value: CharacteristicValue): Promise<void> {
+    if (!this.online) {
+      this.platform.log.debug(`Gate ${this.accessory.context.gate.parameters.description} is offline, ignoring request.`);
+      this.closed();
+
+      return;
+    }
+
     if (this.state.targetDoorState !== this.platform.Characteristic.TargetDoorState.CLOSED) {
       this.platform.log.debug(`Gate ${this.accessory.context.gate.parameters.description} is already opening, ignoring request.`);
 
