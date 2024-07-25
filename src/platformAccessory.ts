@@ -88,7 +88,7 @@ export class GateAccessory {
           }, this.OPEN_TIME);
         }, this.OPENING_TIME);
       } catch (error) {
-        this.platform.log.error(`Failed to open gate ${this.accessory.context.gate.parameters.description}: ${error}`);
+        this.platform.log.error(`Failed to open gate ${this.accessory.context.gate.parameters.description}:`, error);
 
         // mark it as offline
         this.online = false;

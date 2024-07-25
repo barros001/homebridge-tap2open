@@ -1,5 +1,5 @@
 import {API, Characteristic, DynamicPlatformPlugin, Logging, PlatformAccessory, PlatformConfig, Service} from 'homebridge';
-import Tap2Open, {Event} from './lib/tap2open.js';
+import Tap2Open, {Event, Tap2OpenError} from './lib/tap2open.js';
 
 import {PLATFORM_NAME, PLUGIN_NAME} from './settings.js';
 import {GateAccessory} from './platformAccessory.js';
@@ -54,7 +54,7 @@ export class HomebridgePlatform implements DynamicPlatformPlugin {
     try {
       await this.discoverGates();
 
-      this.tap2OpenClient.on(Event.ERROR, (error) => {
+      this.tap2OpenClient.on(Event.ERROR, (error?: Tap2OpenError) => {
         setTimeout(() => {
           this.log.error('Received error event:', error);
           this.reconnectIn(Math.max(this.MINIMUM_RECONNECT_INTERVAL, this.config.reconnectInterval));

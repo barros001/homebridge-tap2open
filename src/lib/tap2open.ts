@@ -28,11 +28,26 @@ export enum Event {
   ERROR = 'error'
 }
 
-type EventListener = (error?: string) => void;
+type EventListener = (error?: Tap2OpenError) => void;
 
 type EventListeners = {
   [Event.ERROR]?: Array<EventListener>;
 };
+
+type ErrorContext = {
+  [key: string]: string | number;
+};
+
+export class Tap2OpenError extends Error {
+  public context: ErrorContext;
+
+  constructor(message: string, context: ErrorContext = {}) {
+    super(message);
+
+    this.name = 'Tap2OpenError';
+    this.context = context;
+  }
+}
 
 export default class Tap2Open {
   TOKEN_TTL = 60 * 60 * 1000; // 1 hour
@@ -63,7 +78,7 @@ export default class Tap2Open {
     });
 
     if (!response.ok) {
-      this.error('Login failed');
+      this.error('Login failed', response);
     }
 
     this.token = {
@@ -93,7 +108,7 @@ export default class Tap2Open {
     });
 
     if (!response.ok) {
-      this.error('Failed to list gates');
+      this.error('Failed to list gates', response);
     }
 
     return (await response.json()).gates;
@@ -114,7 +129,7 @@ export default class Tap2Open {
     });
 
     if (!response.ok) {
-      this.error('Failed to open gate');
+      this.error('Failed to open gate', response);
     }
 
     return true;
@@ -154,7 +169,7 @@ export default class Tap2Open {
     return this;
   }
 
-  private dispatch(event: Event, error?: string): this {
+  private dispatch(event: Event, error?: Tap2OpenError): this {
     if (!this.listeners[event]) {
       return this;
     }
@@ -166,9 +181,14 @@ export default class Tap2Open {
     return this;
   }
 
-  private error(error: string): void {
+  private error(message: string, response: Response): void {
+    const error = new Tap2OpenError(message, {
+      status: response.status,
+      statusText: response.statusText,
+    });
+
     this.dispatch(Event.ERROR, error);
 
-    throw new Error(error);
+    throw error;
   }
 }
