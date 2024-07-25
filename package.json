@@ -1,7 +1,7 @@
 {
   "displayName": "Homebridge Tap2Open",
   "name": "homebridge-tap2open",
-  "version": "1.0.0-beta.1",
+  "version": "1.0.0-beta.2",
   "description": "Homebridge Plugin for Tap2Open",
   "license": "Apache-2.0",
   "type": "module",
