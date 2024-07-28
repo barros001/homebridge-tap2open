@@ -57,7 +57,7 @@ export class HomebridgePlatform implements DynamicPlatformPlugin {
       this.tap2OpenClient.on(Event.ERROR, (error?: Tap2OpenError) => {
         setTimeout(() => {
           this.log.error('Received error event:', error);
-          this.reconnectIn(Math.max(this.MINIMUM_RECONNECT_INTERVAL, this.config.reconnectInterval));
+          this.reconnectIn(0);
         }, 0);
       });
     } catch (e) {

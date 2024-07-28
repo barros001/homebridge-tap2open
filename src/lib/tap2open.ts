@@ -50,7 +50,7 @@ export class Tap2OpenError extends Error {
 }
 
 export default class Tap2Open {
-  TOKEN_TTL = 60 * 60 * 1000; // 1 hour
+  TOKEN_TTL = 15 * 60 * 1000; // 15 minutes
 
   private readonly config: Config;
   private token: Token | null = null;
